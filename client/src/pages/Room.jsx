@@ -2,11 +2,11 @@
 
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { io } from 'socket.io-client'
 
 import { useWhiteboard } from '../components/whiteboard/useWhiteboard'
 import { useVoiceChat } from '../components/presence/useVoiceChat'
 import { useToast } from '../components/ui/ToastProvider'
+import getSocket from '../hooks/useSocket'
 
 import WhiteboardCanvas from '../components/whiteboard/WhiteboardCanvas'
 import Toolbar from '../components/whiteboard/Toolbar'
@@ -14,8 +14,6 @@ import PresenceSidebar from '../components/presence/PresenceSidebar'
 import ExportModal from '../components/ui/ExportModal'
 
 import styles from './Room.module.css'
-
-const SOCKET_URL = 'http://localhost:3001'
 
 export default function Room() {
   const { roomId } = useParams()
@@ -74,8 +72,9 @@ export default function Room() {
       return
     }
 
-    const socket = io(SOCKET_URL, { transports: ['websocket'] })
+    const socket = getSocket()
     socketRef.current = socket
+    if (!socket.connected) socket.connect()
 
     socket.on('connect', () => {
       setConnected(true)
@@ -158,6 +157,7 @@ export default function Room() {
     })
 
     return () => {
+      socket.removeAllListeners()
       socket.disconnect()
       socketRef.current = null
     }
